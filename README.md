@@ -103,6 +103,17 @@ Render is a great alternative that runs the app exactly as it runs on your local
   5. Start Command: `npm start`
   6. Click **Create Web Service**. (Note: Free instances spin down after 15 minutes of inactivity and take ~50 seconds to wake up).
 
+
+### 4. Netlify
+This repository is also **pre-configured** for Netlify (via `netlify.toml` and the `netlify/functions/` directory).
+- **Cost**: Free (Starter Tier).
+- **How**:
+  1. Go to [Netlify.com](https://netlify.com) and sign in.
+  2. Click **"Add new site"** -> **"Import an existing project"**.
+  3. Select your `Pirate69-ui` repository from GitHub.
+  4. Netlify will automatically detect the settings from `netlify.toml` (Build command: `npm run build`, Publish directory: `dist`).
+  5. Click **Deploy Site**.
+
 ### 3. Koyeb
 Koyeb offers a generous free tier for running Docker containers and Node.js applications.
 - **Cost**: Free (Eco Tier).

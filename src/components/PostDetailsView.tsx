@@ -34,17 +34,33 @@ const DownloadGroup: React.FC<{ title: string, links: DownloadLink[] }> = ({ tit
       </button>
       {isOpen && (
         <div className="p-4 grid gap-3 border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-           {links.map((link, idx) => (
+           {links.map((link, idx) => {
+             let name = link.label || (link as any).name || "Download Link";
+             const isSeason = name.toLowerCase().includes('season') || name.match(/S\d+/i) || name.match(/[E|e]p(?:isode)?s?[:\s\.]*(\d+)/i) || name.match(/[E|e](\d+)(?:\s|\.|-|_|\[|\])/i);
+             const hasEpNum = name.match(/[E|e]p(?:isode)?s?[:\s\.]*\d+/i) || name.match(/[E|e]\d+(?:\s|\.|-|_|\[|\])/i) || name.match(/Part\s\d+/i);
+             
+             if (links.length > 1 && !hasEpNum) {
+               // If it's a huge file at the end of the list, it's likely a season pack/batch
+               const isLikelyBatch = idx === links.length - 1 && (link.size?.includes('GB') && parseFloat(link.size) > 2);
+               if (isLikelyBatch) {
+                 name = `Batch/Zip - ${name}`;
+               } else {
+                 name = `${isSeason ? 'Ep' : 'Part'} ${idx + 1} - ${name}`;
+               }
+             }
+
+             return (
              <ResolvableLink 
                 key={idx} 
-                name={link.label || (link as any).name || "Download Link"} 
+                name={name} 
                 url={link.url} 
                 fileQuality={link.quality} 
                 size={link.size} 
                 audio={link.audio} 
                 server={link.server} 
              />
-           ))}
+             );
+           })}
         </div>
       )}
     </div>

@@ -44,6 +44,26 @@ function getEpisodeLabel(filename: string, index: number, isSeason: boolean) {
   return server;
 }
 
+function getProviderColors(label: string) {
+  const lower = label.toLowerCase();
+  
+  if (lower.includes('g-direct') || lower.includes('fastdl'))
+    return "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 border border-emerald-200 dark:border-emerald-500/30";
+  if (lower.includes('v-cloud') || lower.includes('hubcloud'))
+    return "bg-sky-100 text-sky-800 hover:bg-sky-200 dark:bg-sky-500/20 dark:text-sky-300 dark:hover:bg-sky-500/30 border border-sky-200 dark:border-sky-500/30";
+  if (lower.includes('filepress') || lower.includes('filebee'))
+    return "bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/30 border border-amber-200 dark:border-amber-500/30";
+  if (lower.includes('vegadrive') || lower.includes('v-drive'))
+    return "bg-indigo-100 text-indigo-800 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:hover:bg-indigo-500/30 border border-indigo-200 dark:border-indigo-500/30";
+  if (lower.includes('mega'))
+    return "bg-rose-100 text-rose-800 hover:bg-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30 border border-rose-200 dark:border-rose-500/30";
+  if (lower.includes('gdflix') || lower.includes('gdtot') || lower.includes('pixeldrain'))
+    return "bg-fuchsia-100 text-fuchsia-800 hover:bg-fuchsia-200 dark:bg-fuchsia-500/20 dark:text-fuchsia-300 dark:hover:bg-fuchsia-500/30 border border-fuchsia-200 dark:border-fuchsia-500/30";
+    
+  // Default light theme fallback
+  return "bg-slate-100 text-slate-800 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700";
+}
+
 export function ResolvableLink({ name, url, fileQuality, size, audio, server }: { name: string, url: string, fileQuality?: string, size?: string, audio?: string, server?: string, key?: React.Key }) {
   const [resolving, setResolving] = useState(false);
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
@@ -192,18 +212,22 @@ export function ResolvableLink({ name, url, fileQuality, size, audio, server }: 
                    </div>
                  )}
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {group.links.map((ep, idx) => (
-                      <a 
-                        key={idx}
-                        href={ep.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`inline-flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm shadow-sm ${theme.button}`}
-                      >
-                        <span className="truncate pr-2">{getEpisodeLabel(ep.name, idx, isSeason)}</span>
-                        <Download className="w-4 h-4 shrink-0 opacity-80" />
-                      </a>
-                    ))}
+                    {group.links.map((ep, idx) => {
+                      const label = getEpisodeLabel(ep.name, idx, isSeason);
+                      const providerTheme = getProviderColors(label);
+                      return (
+                        <a 
+                          key={idx}
+                          href={ep.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`inline-flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-sm shadow-sm ${providerTheme}`}
+                        >
+                          <span className="truncate pr-2">{label}</span>
+                          <Download className="w-4 h-4 shrink-0 opacity-80" />
+                        </a>
+                      );
+                    })}
                  </div>
                </div>
              ))}

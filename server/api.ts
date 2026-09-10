@@ -59,7 +59,7 @@ let lastResolveTime = 0;
 
 async function fetchActualDomain(site: string) {
     try {
-        const res1 = await axios.get(`https://vglist.top/?re=${site}`, { maxRedirects: 0, validateStatus: () => true, timeout: 2000 });
+        const res1 = await axios.get(`https://vglist.fit/?re=${site}`, { maxRedirects: 0, validateStatus: () => true, timeout: 2000 });
         let url = res1.headers.location;
         
         if (!url) {

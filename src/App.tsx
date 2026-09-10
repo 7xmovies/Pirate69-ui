@@ -259,7 +259,7 @@ export default function App() {
     fetchPosts({ pageNum: page + 1 });
   };
 
-  const handlePostClick = async (url: string, isInitialLoad = false) => {
+  const handlePostClick = React.useCallback(async (url: string, isInitialLoad = false) => {
     setSelectedPost(url);
     if (!isInitialLoad) {
        window.history.pushState({}, '', `?post=${encodeURIComponent(url)}`);
@@ -292,7 +292,7 @@ export default function App() {
     } finally {
       setLoadingDetails(false);
     }
-  };
+  }, []);
 
   const handleBackToHome = () => {
      setSelectedPost(null);

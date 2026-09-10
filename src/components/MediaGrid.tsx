@@ -8,25 +8,25 @@ interface MediaGridProps {
   onPostClick: (url: string) => void;
 }
 
-export function MediaGrid({ results, onPostClick }: MediaGridProps) {
+export const MediaGrid = React.memo(function MediaGrid({ results, onPostClick }: MediaGridProps) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
       {results.map((item, index) => (
         <button
           key={item.id || index}
           onClick={() => onPostClick(item.link)}
-          className="group text-left flex flex-col bg-white dark:bg-slate-900/40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:ring-offset-slate-950 backdrop-blur-sm"
+          className="group text-left flex flex-col bg-white dark:bg-slate-900/80 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-50 dark:ring-offset-slate-950"
         >
           {/* Thumbnail Container */}
           <div className="relative aspect-[2/3] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             {item.category && (
               <div className="absolute top-2 left-2 z-10 pointer-events-none">
-                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md shadow-md uppercase tracking-wider backdrop-blur-md ${
+                <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md shadow-md uppercase tracking-wider ${
                   item.category === 'hollywood' 
-                    ? 'bg-indigo-600/90 text-white' 
+                    ? 'bg-indigo-600/95 text-white' 
                     : item.category === 'bollywood'
-                    ? 'bg-orange-600/90 text-white'
-                    : 'bg-emerald-600/90 text-white'
+                    ? 'bg-orange-600/95 text-white'
+                    : 'bg-emerald-600/95 text-white'
                 }`}>
                   {item.category}
                 </span>
@@ -37,6 +37,8 @@ export function MediaGrid({ results, onPostClick }: MediaGridProps) {
                 src={getProxyUrl(item.thumbnail)}
                 alt={item.title}
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
@@ -52,8 +54,8 @@ export function MediaGrid({ results, onPostClick }: MediaGridProps) {
               </div>
             )}
             {/* Overlay for hover */}
-            <div className="absolute inset-0 bg-slate-50 dark:bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-              <div className="p-3 bg-indigo-600 rounded-full text-white flex items-center gap-2 font-medium shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+            <div className="absolute inset-0 bg-slate-50/0 dark:bg-slate-950/0 group-hover:bg-slate-50/20 dark:group-hover:bg-slate-950/40 transition-colors duration-300 flex items-center justify-center">
+              <div className="p-3 bg-indigo-600 rounded-full text-white flex items-center gap-2 font-medium shadow-lg transform translate-y-4 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                 Extract Details <ExternalLink className="w-4 h-4" />
               </div>
             </div>
@@ -61,7 +63,7 @@ export function MediaGrid({ results, onPostClick }: MediaGridProps) {
           
           {/* Content Container */}
           <div className="p-3 sm:p-5 flex flex-col flex-grow justify-between gap-3 sm:gap-4">
-            <h3 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200 line-clamp-3 leading-snug group-hover:text-indigo-300 transition-colors">
+            <h3 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200 line-clamp-3 leading-snug group-hover:text-indigo-400 transition-colors">
               {item.title}
             </h3>
           </div>
@@ -69,4 +71,4 @@ export function MediaGrid({ results, onPostClick }: MediaGridProps) {
       ))}
     </div>
   );
-}
+});

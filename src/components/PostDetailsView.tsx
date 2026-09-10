@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, ArrowLeft, Film, Download, Share2, Bookmark, BookmarkCheck, Unlock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, ArrowLeft, Film, Download, Share2, Bookmark, BookmarkCheck, Unlock, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { PostDetails, DownloadLink } from '../types';
 import { getProxyUrl } from '../utils/url';
@@ -197,13 +197,24 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
                      <p className="text-slate-600 dark:text-slate-400 max-w-md whitespace-pre-wrap">
                        {notification}
                      </p>
-                     <button
-                       onClick={() => setIsUnlocked(true)}
-                       className="mt-4 flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
-                     >
-                       <Unlock className="w-5 h-5" />
-                       Unlock Links
-                     </button>
+                     <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                       <button
+                         onClick={() => setIsUnlocked(true)}
+                         className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/30"
+                       >
+                         <Unlock className="w-5 h-5" />
+                         Unlock Links
+                       </button>
+                       <a
+                         href="https://t.me/piratedcult"
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="flex items-center gap-2 px-6 py-3 bg-[#229ED9] hover:bg-[#1f8ec4] text-white font-medium rounded-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-[#229ED9]/30"
+                       >
+                         <Send className="w-5 h-5" />
+                         Join Telegram
+                       </a>
+                     </div>
                    </div>
                  ) : (
                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">

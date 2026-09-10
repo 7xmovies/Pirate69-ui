@@ -7,6 +7,7 @@ import { MediaGrid } from './components/MediaGrid';
 import { MediaGridSkeleton } from './components/MediaGridSkeleton';
 import { PostDetailsView } from './components/PostDetailsView';
 import { Sidebar } from './components/Sidebar';
+import { Footer } from './components/Footer';
 
 const CATEGORIES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Sci-Fi', 'Horror', 'Thriller', 'Animation', 'Netflix'
@@ -351,7 +352,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-indigo-500/30">
       <Toaster theme="dark" position="bottom-center" />
       
       {/* Navigation Header */}
@@ -438,7 +439,7 @@ export default function App() {
         onSelectSource={handleSourceChange}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         
         {/* Search & Categories - Hide when looking at details */}
         {!selectedPost && !isWatchlistView && !isHistoryView && (
@@ -639,6 +640,7 @@ export default function App() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

@@ -47,8 +47,8 @@ The static database is hosted at: `https://raw.githubusercontent.com/7xmovies/da
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/7xmovies/Pirate69-v2.git
-   cd Pirate69-v2
+   git clone https://github.com/7xmovies/Pirate69-ui.git
+   cd Pirate69-ui
    ```
 
 2. **Install dependencies:**
@@ -76,6 +76,37 @@ The static database is hosted at: `https://raw.githubusercontent.com/7xmovies/da
    npm run build
    npm start
    ```
+
+---
+
+## 🌍 Where to Deploy for Free
+
+Because this project consists of a Vite React frontend and an Express/Node.js backend, you need a platform that supports full-stack web applications. Here are the best free options:
+
+### 1. Vercel (Recommended)
+This repository is **already pre-configured** for Vercel (it contains `vercel.json` and an `api/` directory for serverless functions).
+- **Cost**: Free (Hobby Tier).
+- **How**: 
+  1. Go to [Vercel.com](https://vercel.com) and sign in with GitHub.
+  2. Click "Add New Project" and select your `Pirate69-ui` repository.
+  3. Leave the framework preset as Vite. Vercel will automatically build the frontend and deploy the `api/` folder as serverless functions.
+  4. Click **Deploy**.
+
+### 2. Render.com
+Render is a great alternative that runs the app exactly as it runs on your local machine using the `npm start` command.
+- **Cost**: Free (Web Service Tier).
+- **How**:
+  1. Go to [Render.com](https://render.com) and create an account.
+  2. Click "New +" and select **Web Service**.
+  3. Connect your GitHub account and select this repository.
+  4. Build Command: `npm install && npm run build`
+  5. Start Command: `npm start`
+  6. Click **Create Web Service**. (Note: Free instances spin down after 15 minutes of inactivity and take ~50 seconds to wake up).
+
+### 3. Koyeb
+Koyeb offers a generous free tier for running Docker containers and Node.js applications.
+- **Cost**: Free (Eco Tier).
+- **How**: Similar to Render, connect your GitHub, set the build and start commands, and deploy. Koyeb's free tier has the advantage of not sleeping (unlike Render).
 
 ---
 

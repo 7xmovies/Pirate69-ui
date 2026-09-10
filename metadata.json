@@ -1,7 +1,10 @@
 {
   "name": "Pirate69 ui",
   "description": "A media information extractor that searches and retrieves post titles, thumbnails, and links.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "clipboard-write",
+    "clipboard-read"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

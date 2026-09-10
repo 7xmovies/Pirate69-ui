@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, ArrowLeft, Film, Download, Share2, Bookmark, BookmarkCheck, Unlock, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import { toast } from 'sonner';
-import { PostDetails, DownloadLink } from '../types';
+import { PostDetails, DownloadLink, MediaItem } from '../types';
 import { getProxyUrl } from '../utils/url';
 import { ResolvableLink } from './ResolvableLink';
+import { MediaGrid } from './MediaGrid';
 
 interface PostDetailsViewProps {
   loading: boolean;
@@ -13,6 +14,8 @@ interface PostDetailsViewProps {
   onBack: () => void;
   isInWatchlist: boolean;
   onToggleWatchlist: () => void;
+  relatedPosts?: MediaItem[];
+  onRelatedPostClick?: (url: string) => void;
 }
 
 const DownloadGroup: React.FC<{ title: string, links: DownloadLink[] }> = ({ title, links }) => {
@@ -51,7 +54,7 @@ const DownloadGroup: React.FC<{ title: string, links: DownloadLink[] }> = ({ tit
   );
 }
 
-export function PostDetailsView({ loading, error, details, selectedPostUrl, onBack, isInWatchlist, onToggleWatchlist }: PostDetailsViewProps) {
+export function PostDetailsView({ loading, error, details, selectedPostUrl, onBack, isInWatchlist, onToggleWatchlist, relatedPosts, onRelatedPostClick }: PostDetailsViewProps) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [notification, setNotification] = useState<string>("Click the button below to unlock and reveal the high-speed download links.");
 
@@ -195,7 +198,7 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
          {/* Left Column: Thumbnail */}
-         <div className="lg:col-span-4">
+         <div className="lg:col-span-3 max-w-xs mx-auto lg:max-w-none w-full">
             <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 p-2 rounded-2xl sticky top-24">
               {details.thumbnail ? (
                 <img 
@@ -213,7 +216,7 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
          </div>
 
          {/* Right Column: Details & Links */}
-         <div className="lg:col-span-8 space-y-12">
+         <div className="lg:col-span-9 space-y-12">
             <div>
                <h1 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white leading-tight mb-4 font-heading">
                  {details.title}
@@ -283,6 +286,14 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
             )}
          </div>
       </div>
+
+      {/* Related Posts */}
+      {relatedPosts && relatedPosts.length > 0 && onRelatedPostClick && (
+        <div className="mt-16 pt-10 border-t border-slate-200 dark:border-slate-800">
+           <h2 className="text-2xl font-semibold text-slate-900 dark:text-white mb-6">You May Also Like</h2>
+           <MediaGrid results={relatedPosts} onPostClick={onRelatedPostClick} />
+        </div>
+      )}
     </div>
   );
 }

@@ -548,6 +548,8 @@ export default function App() {
             onBack={handleBackToHome}
             isInWatchlist={watchlist.some(p => p.link === selectedPost)}
             onToggleWatchlist={handleToggleWatchlist}
+            relatedPosts={results.filter(p => p.link !== selectedPost).slice(0, 4)}
+            onRelatedPostClick={handlePostClick}
           />
         ) : isWatchlistView ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -215,7 +215,7 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
          {/* Right Column: Details & Links */}
          <div className="lg:col-span-8 space-y-12">
             <div>
-               <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 dark:text-white leading-tight mb-4 font-heading">
+               <h1 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white leading-tight mb-4 font-heading">
                  {details.title}
                </h1>
             </div>

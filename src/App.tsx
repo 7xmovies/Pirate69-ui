@@ -482,16 +482,6 @@ export default function App() {
                   >
                     Bollywood
                   </button>
-                  <button 
-                    onClick={() => handleSourceChange('xprimehub')} 
-                    className={`px-6 py-2.5 rounded-xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border ${
-                      activeSource === 'xprimehub' 
-                        ? 'bg-gradient-to-br from-fuchsia-600 to-pink-600 shadow-fuchsia-500/50 border-fuchsia-400 ring-2 ring-fuchsia-400 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950' 
-                        : 'bg-slate-800 hover:bg-slate-700 shadow-slate-900/50 border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    X-Hub (18+)
-                  </button>
                 </div>
               </div>
             </div>

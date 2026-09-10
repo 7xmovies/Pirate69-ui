@@ -700,4 +700,52 @@ router.get('/resolve-link', async (req, res) => {
   }
 });
 
+// Dynamic Sitemap Generation
+router.get('/sitemap.xml', async (req, res) => {
+    try {
+        const [hollywood, bollywood, xprimehub] = await Promise.all([
+            getGithubIndex('hollywood'),
+            getGithubIndex('bollywood'),
+            getGithubIndex('xprimehub')
+        ]);
+
+        const baseUrl = req.protocol + '://' + req.get('host');
+        
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        
+        // Add static routes
+        xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+
+        // Add dynamic routes for movies
+        // We will limit to the first 500 from each to keep generation fast, or include all if they aren't huge.
+        // But Netlify functions might timeout if we return 20,000 URLs. Let's just output them.
+        const addEntries = (entries: any[], source: string) => {
+            if (!Array.isArray(entries)) return;
+            // Get newest 1000 items per category to keep sitemap manageable
+            const recent = entries.slice(0, 1000);
+            for (const item of recent) {
+                if (!item.id) continue;
+                xml += `  <url>\n`;
+                xml += `    <loc>${baseUrl}/movie/${source}/${encodeURIComponent(item.id)}</loc>\n`;
+                xml += `    <changefreq>weekly</changefreq>\n`;
+                xml += `    <priority>0.8</priority>\n`;
+                xml += `  </url>\n`;
+            }
+        };
+
+        addEntries(hollywood, 'hollywood');
+        addEntries(bollywood, 'bollywood');
+        addEntries(xprimehub, 'xprimehub');
+
+        xml += '</urlset>';
+
+        res.header('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (error) {
+        console.error('Sitemap generation failed:', error);
+        res.status(500).send('Error generating sitemap');
+    }
+});
+
 export default router;

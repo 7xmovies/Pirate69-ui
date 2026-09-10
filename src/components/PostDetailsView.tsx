@@ -34,33 +34,17 @@ const DownloadGroup: React.FC<{ title: string, links: DownloadLink[] }> = ({ tit
       </button>
       {isOpen && (
         <div className="p-4 grid gap-3 border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-top-2 duration-300">
-           {links.map((link, idx) => {
-             let name = link.label || (link as any).name || "Download Link";
-             const isSeason = name.toLowerCase().includes('season') || name.match(/S\d+/i) || name.match(/[E|e]p(?:isode)?s?[:\s\.]*(\d+)/i) || name.match(/[E|e](\d+)(?:\s|\.|-|_|\[|\])/i);
-             const hasEpNum = name.match(/[E|e]p(?:isode)?s?[:\s\.]*\d+/i) || name.match(/[E|e]\d+(?:\s|\.|-|_|\[|\])/i) || name.match(/Part\s\d+/i);
-             
-             if (links.length > 1 && !hasEpNum) {
-               // If it's a huge file at the end of the list, it's likely a season pack/batch
-               const isLikelyBatch = idx === links.length - 1 && (link.size?.includes('GB') && parseFloat(link.size) > 2);
-               if (isLikelyBatch) {
-                 name = `Batch/Zip - ${name}`;
-               } else {
-                 name = `${isSeason ? 'Ep' : 'Part'} ${idx + 1} - ${name}`;
-               }
-             }
-
-             return (
+           {links.map((link, idx) => (
              <ResolvableLink 
                 key={idx} 
-                name={name} 
+                name={link.label || (link as any).name || "Download Link"} 
                 url={link.url} 
                 fileQuality={link.quality} 
                 size={link.size} 
                 audio={link.audio} 
                 server={link.server} 
              />
-             );
-           })}
+           ))}
         </div>
       )}
     </div>
@@ -79,6 +63,42 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
       })
       .catch(err => console.error("Failed to fetch notification:", err));
   }, []);
+
+  // Update Document Meta for SEO when viewing details
+  useEffect(() => {
+    if (details && details.title) {
+      document.title = `${details.title} - Download on Pirate69`;
+      
+      let description = `Download ${details.title} in high quality on Pirate69.`;
+      if (details.description) {
+        description = details.description.substring(0, 160);
+      }
+      
+      const setMeta = (name: string, content: string) => {
+        let el = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          if (name.startsWith('og:') || name.startsWith('twitter:')) {
+            el.setAttribute('property', name);
+          } else {
+            el.setAttribute('name', name);
+          }
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+      
+      setMeta('description', description);
+      setMeta('og:title', `${details.title} - Pirate69`);
+      setMeta('og:description', description);
+      if (details.thumbnail) {
+        setMeta('og:image', details.thumbnail);
+        setMeta('twitter:image', details.thumbnail);
+      }
+    } else {
+      document.title = "Pirate69 - Ultimate Movies & TV Shows Download Hub";
+    }
+  }, [details]);
 
   const groupedLinks = React.useMemo(() => {
     if (!details?.downloadLinks) return [];

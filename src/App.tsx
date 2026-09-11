@@ -132,18 +132,22 @@ export default function App() {
     }
   }, []);
 
+  const [isRandomMode, setIsRandomMode] = useState(false);
+
   const fetchPosts = async ({ 
     q = query, 
     category = activeCategory, 
     pageNum = 1,
     isInitial = false,
-    source = activeSource
+    source = activeSource,
+    random = isRandomMode
   }: { 
     q?: string, 
     category?: string, 
     pageNum?: number,
     isInitial?: boolean,
-    source?: string
+    source?: string,
+    random?: boolean
   }) => {
     if (pageNum === 1) {
       setLoading(true);
@@ -156,6 +160,7 @@ export default function App() {
       if (q) url += `&q=${encodeURIComponent(q)}`;
       if (category) url += `&category=${encodeURIComponent(category)}`;
       if (source) url += `&source=${encodeURIComponent(source)}`;
+      if (random) url += `&random=true`;
 
       const res = await fetch(url);
       const data: SearchResponse = await res.json();
@@ -188,18 +193,30 @@ export default function App() {
     setActiveCategory('');
     setIsWatchlistView(false);
     setIsHistoryView(false);
+    setIsRandomMode(false);
     handleBackToHome();
-    fetchPosts({ q: query, category: '', pageNum: 1 });
+    fetchPosts({ q: query, category: '', pageNum: 1, random: false });
   };
 
   const handleSourceChange = (newSource: SourceType) => {
     setActiveSource(newSource);
     setIsWatchlistView(false);
     setIsHistoryView(false);
+    setIsRandomMode(false);
     setQuery('');
     setActiveCategory('');
     handleBackToHome();
-    fetchPosts({ q: '', category: '', pageNum: 1, source: newSource });
+    fetchPosts({ q: '', category: '', pageNum: 1, source: newSource, random: false });
+  };
+
+  const handleRandomize = () => {
+    setIsWatchlistView(false);
+    setIsHistoryView(false);
+    setIsRandomMode(true);
+    setQuery('');
+    setActiveCategory('');
+    handleBackToHome();
+    fetchPosts({ q: '', category: '', pageNum: 1, random: true });
   };
 
   const handleSyncGithub = async () => {
@@ -483,13 +500,25 @@ export default function App() {
                   >
                     Bollywood
                   </button>
+                  <button 
+                    onClick={handleRandomize} 
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border ${
+                      isRandomMode
+                        ? 'bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-fuchsia-500/50 border-fuchsia-400 ring-2 ring-fuchsia-400 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950' 
+                        : 'bg-slate-800 hover:bg-slate-700 shadow-slate-900/50 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    🎲 Surprise Me
+                  </button>
                 </div>
               </div>
             </div>
             
             <div className="mt-10 mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-semibold font-heading">
-                {query 
+                {isRandomMode 
+                  ? '🎲 Random Picks For You'
+                  : query 
                   ? `Search Results for "${query}"`
                   : activeCategory 
                   ? `${activeCategory} Movies & Shows`

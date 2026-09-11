@@ -5,7 +5,7 @@ export function Footer() {
   return (
     <footer className="w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-10 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4 text-xl font-bold text-slate-900 dark:text-slate-100 font-heading">
               Pirate69 🏴‍☠️
@@ -22,16 +22,6 @@ export function Footer() {
               <li><a href="#" className="hover:text-indigo-500 transition-colors">Hollywood</a></li>
               <li><a href="#" className="hover:text-indigo-500 transition-colors">Bollywood</a></li>
               <li><a href="#" className="hover:text-indigo-500 transition-colors">Request Movie</a></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Legal</h3>
-            <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">DMCA</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Contact Us</a></li>
             </ul>
           </div>
         </div>

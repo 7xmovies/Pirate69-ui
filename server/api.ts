@@ -445,9 +445,10 @@ router.get('/json/search', async (req, res) => {
         const categoryName = getCategoryName(source);
 
         const indexData = await getGithubIndex(categoryName);
+        let results = Array.isArray(indexData) ? [...indexData].reverse() : [];
 
         // Filter the results
-        const results = indexData.filter(movie => {
+        results = results.filter(movie => {
             if (query === '' || query === '*') return true;
             return (movie.title && movie.title.toLowerCase().includes(query)) || 
                    (movie.id && movie.id.toLowerCase().includes(query));
@@ -503,7 +504,8 @@ router.get('/search', async (req, res) => {
 
     // 1. Fetch index data for the selected category (hollywood-index.json, bollywood-index.json, or xprimehub-index.json)
     const indexData = await getGithubIndex(categoryName);
-    let filtered: any[] = Array.isArray(indexData) ? [...indexData] : [];
+    // Reverse the array so the newest items (added to the end of the JSON) appear first
+    let filtered: any[] = Array.isArray(indexData) ? [...indexData].reverse() : [];
 
     // 2. Filter by search query if provided
     const queryClean = (query === '*' ? '' : query).toLowerCase();
@@ -525,6 +527,16 @@ router.get('/search', async (req, res) => {
         const title = (m.title || m.cleanTitle || '').toLowerCase();
         return title.includes(catLower);
       });
+    }
+
+    // 3.5 Randomize results if requested
+    const isRandom = req.query.random === 'true';
+    if (isRandom && filtered.length > 0) {
+      // Fisher-Yates shuffle
+      for (let i = filtered.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+      }
     }
 
     // 4. Pagination

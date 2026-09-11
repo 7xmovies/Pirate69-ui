@@ -625,8 +625,9 @@ router.get('/image', async (req, res) => {
       referer = xprimeDomain.endsWith('/') ? xprimeDomain : `${xprimeDomain}/`;
     }
 
-    const response = await axiosGetWithFallback(url, {
-      responseType: 'arraybuffer',
+    const response = await axios.get(url, {
+      responseType: 'stream',
+      timeout: 10000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Referer': referer,
@@ -636,7 +637,7 @@ router.get('/image', async (req, res) => {
 
     res.set('Content-Type', response.headers['content-type'] as string);
     res.set('Cache-Control', 'public, max-age=31536000');
-    res.send(response.data);
+    response.data.pipe(res);
   } catch (error: any) {
     console.error('Image proxy error:', error.message);
     res.status(404).send('Image not found');

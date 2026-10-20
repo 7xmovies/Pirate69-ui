@@ -606,18 +606,105 @@ router.get('/details', async (req, res) => {
   }
 });
 
+const FALLBACK_POSTER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450" fill="none">
+  <rect width="300" height="450" fill="#0f172a"/>
+  <rect x="12" y="12" width="276" height="426" rx="16" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+  <circle cx="150" cy="190" r="32" fill="#334155"/>
+  <path d="M120 270L145 240L160 255L180 230L200 270H120Z" fill="#475569"/>
+  <text x="150" y="320" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Pirate69</text>
+  <text x="150" y="345" text-anchor="middle" fill="#64748b" font-family="system-ui, sans-serif" font-size="13">Poster Unavailable</text>
+</svg>`;
+
+async function getCandidateImageUrls(originalUrl: string): Promise<string[]> {
+  const candidates: string[] = [];
+
+  // Check for base64 encoded direct image in query parameter 'u' (e.g. ?u=aHR0cHM6Ly9pb...)
+  try {
+    const parsed = new URL(originalUrl);
+    const uParam = parsed.searchParams.get('u');
+    if (uParam) {
+      const decoded = Buffer.from(uParam, 'base64').toString('utf8');
+      if (decoded.startsWith('http://') || decoded.startsWith('https://')) {
+        candidates.push(decoded);
+      }
+    }
+  } catch (e) {}
+
+  candidates.push(originalUrl);
+  try {
+    const parsed = new URL(originalUrl);
+    const lowerHost = parsed.hostname.toLowerCase();
+
+    if (lowerHost.includes('vegamovies')) {
+      const vegaDomain = await getVegaDomain();
+      try {
+        const vegaParsed = new URL(vegaDomain);
+        const activeHost = vegaParsed.hostname;
+        const hostParts = activeHost.split('.');
+        const activeTld = hostParts[hostParts.length - 1];
+
+        const imgHostActive = `img.vegamovies.${activeTld}`;
+        if (lowerHost !== imgHostActive) {
+          const u1 = new URL(originalUrl);
+          u1.hostname = imgHostActive;
+          candidates.push(u1.toString());
+        }
+
+        if (lowerHost !== activeHost) {
+          const u2 = new URL(originalUrl);
+          u2.hostname = activeHost;
+          candidates.push(u2.toString());
+        }
+
+        const origParts = lowerHost.split('.');
+        if (origParts.length >= 2) {
+          origParts[origParts.length - 1] = activeTld;
+          const newHost = origParts.join('.');
+          if (newHost !== lowerHost) {
+            const u3 = new URL(originalUrl);
+            u3.hostname = newHost;
+            candidates.push(u3.toString());
+          }
+        }
+      } catch (e) {}
+    } else if (lowerHost.includes('rogmovies')) {
+      const rogDomain = await getRogDomain();
+      try {
+        const rogParsed = new URL(rogDomain);
+        if (lowerHost !== rogParsed.hostname) {
+          const u1 = new URL(originalUrl);
+          u1.hostname = rogParsed.hostname;
+          candidates.push(u1.toString());
+        }
+      } catch (e) {}
+    } else if (lowerHost.includes('xprime')) {
+      const xprimeDomain = await getXprimeDomain();
+      try {
+        const xprimeParsed = new URL(xprimeDomain);
+        if (lowerHost !== xprimeParsed.hostname) {
+          const u1 = new URL(originalUrl);
+          u1.hostname = xprimeParsed.hostname;
+          candidates.push(u1.toString());
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  return Array.from(new Set(candidates));
+}
+
 // API route for proxying images to bypass hotlinking protections
 router.get('/image', async (req, res) => {
-  try {
-    const url = req.query.url as string;
-    if (!url) {
-      return res.status(400).send('URL is required');
-    }
+  const url = req.query.url as string;
+  if (!url) {
+    return res.status(400).send('URL is required');
+  }
 
+  try {
     const vegaDomain = await getVegaDomain();
     const rogDomain = await getRogDomain();
     const xprimeDomain = await getXprimeDomain();
-    
+
     let referer = vegaDomain.endsWith('/') ? vegaDomain : `${vegaDomain}/`;
     if (url.includes('rogmovies')) {
       referer = rogDomain.endsWith('/') ? rogDomain : `${rogDomain}/`;
@@ -625,22 +712,46 @@ router.get('/image', async (req, res) => {
       referer = xprimeDomain.endsWith('/') ? xprimeDomain : `${xprimeDomain}/`;
     }
 
-    const response = await axios.get(url, {
-      responseType: 'stream',
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': referer,
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
-      }
-    });
+    const candidateUrls = await getCandidateImageUrls(url);
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': referer,
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+    };
 
-    res.set('Content-Type', response.headers['content-type'] as string);
-    res.set('Cache-Control', 'public, max-age=31536000');
-    response.data.pipe(res);
+    let response: any = null;
+    let fetchError: any = null;
+
+    for (const targetUrl of candidateUrls) {
+      try {
+        response = await axios.get(targetUrl, {
+          responseType: 'stream',
+          timeout: 6000,
+          headers
+        });
+        if (response && response.status === 200) {
+          break;
+        }
+      } catch (err: any) {
+        fetchError = err;
+      }
+    }
+
+    if (response && response.status === 200) {
+      res.set('Content-Type', response.headers['content-type'] as string || 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=31536000');
+      return response.data.pipe(res);
+    }
+
+    console.warn(`[Image Proxy] Could not load image from candidates for: ${url} (${fetchError?.message || 'Failed'})`);
+    res.set('Content-Type', 'image/svg+xml');
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.status(200).send(FALLBACK_POSTER_SVG);
   } catch (error: any) {
-    console.error('Image proxy error:', error.message);
-    res.status(404).send('Image not found');
+    console.warn('[Image Proxy] Error serving image:', error.message);
+    res.set('Content-Type', 'image/svg+xml');
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.status(200).send(FALLBACK_POSTER_SVG);
   }
 });
 

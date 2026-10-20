@@ -44,6 +44,7 @@ export interface PostDetails {
   thumbnail: string;
   screenshots: string[];
   genres?: string[];
+  description?: string;
   downloadLinks: DownloadLink[];
 }
 

@@ -10,6 +10,17 @@ async function startServer() {
   // Add JSON body parsing middleware
   app.use(express.json());
 
+  // Universal CORS support so external users, bots, and apps can use the API
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
   // Use extracted API routes
   app.use('/api', apiRouter);
 

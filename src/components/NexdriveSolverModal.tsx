@@ -163,6 +163,62 @@ export const NexdriveSolverModal: React.FC<NexdriveSolverModalProps> = ({ isOpen
             </div>
           </div>
 
+          {/* Public Developer API Link Card */}
+          <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/50 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="w-4 h-4 text-indigo-500" />
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
+                  Public API Link for Developers & Bots
+                </span>
+              </div>
+              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                CORS Enabled
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900/90 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+              <span className="px-2 py-1 text-[10px] font-bold rounded bg-indigo-600 text-white shrink-0">
+                GET
+              </span>
+              <code className="text-xs text-slate-800 dark:text-slate-200 font-mono truncate flex-1">
+                {typeof window !== 'undefined' ? `${window.location.origin}/api/nexdrive/solve?url={nexdrive_url}&deep=true` : '/api/nexdrive/solve?url={nexdrive_url}&deep=true'}
+              </code>
+              <button
+                onClick={() => {
+                  const apiUrl = `${window.location.origin}/api/nexdrive/solve?url=https://nexdrive.beer/genxfm784776518071/&deep=true`;
+                  handleCopy(apiUrl);
+                }}
+                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-800/50 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors"
+                title="Copy ready-to-test API URL"
+              >
+                {copiedUrl?.includes('/api/nexdrive/solve') ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy API Link
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+              <span>Anyone can call this API directly from Python, cURL, Telegram bots, or web scripts.</span>
+              <a 
+                href="https://github.com/7xmovies/Pirate69-ui/blob/main/NEXDRIVE_SOLVER_API.md" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-indigo-500 hover:text-indigo-400 font-semibold flex items-center gap-1 shrink-0 ml-2"
+              >
+                API Docs <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+
           {/* Result Section */}
           {result && (
             <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">

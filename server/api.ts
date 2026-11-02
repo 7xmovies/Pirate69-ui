@@ -1052,6 +1052,27 @@ export async function solveNexdriveUrl(targetUrl: string, deepResolve: boolean =
   };
 }
 
+// Public API Documentation & Info Endpoint
+router.get('/nexdrive', (req, res) => {
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.protocol || 'https';
+  const baseUrl = `${protocol}://${host}`;
+
+  res.json({
+    status: 'online',
+    name: 'Pirate69 Nexdrive Solver & Direct Video CDN API',
+    version: '1.0.0',
+    description: 'Solve and bypass Nexdrive gateway pages to extract G-Direct (FastDL), Filepress, V-Cloud, and direct unthrottled Google Video CDN download streams.',
+    cors: 'Enabled (Access-Control-Allow-Origin: *)',
+    endpoints: {
+      solve_get: `${baseUrl}/api/nexdrive/solve?url={nexdrive_url}&deep=true`,
+      solve_post: `${baseUrl}/api/nexdrive/solve`
+    },
+    sample_url: `${baseUrl}/api/nexdrive/solve?url=https://nexdrive.beer/genxfm784776518071/&deep=true`,
+    docs: 'https://github.com/7xmovies/Pirate69-ui/blob/main/NEXDRIVE_SOLVER_API.md'
+  });
+});
+
 // Dedicated Nexdrive Solver API Endpoint (GET)
 // Example: GET /api/nexdrive/solve?url=https://nexdrive.beer/genxfm784776518071/&deep=true
 router.get('/nexdrive/solve', async (req, res) => {

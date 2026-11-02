@@ -19,9 +19,9 @@ export function Footer() {
             <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
               <li><a href="#" className="hover:text-indigo-500 transition-colors">Home</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Hollywood</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Bollywood</a></li>
-              <li><a href="#" className="hover:text-indigo-500 transition-colors">Request Movie</a></li>
+              <li><a href="/api/nexdrive" target="_blank" className="hover:text-indigo-500 transition-colors flex items-center gap-1 text-indigo-400 font-medium">⚡ Nexdrive Solver API ↗</a></li>
+              <li><a href="https://github.com/7xmovies/Pirate69-ui/blob/main/NEXDRIVE_SOLVER_API.md" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors">API Documentation ↗</a></li>
+              <li><a href="https://t.me/piratedcult" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-500 transition-colors">Telegram Community</a></li>
             </ul>
           </div>
         </div>

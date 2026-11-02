@@ -885,68 +885,243 @@ router.get('/image', async (req, res) => {
   }
 });
 
-// API route to resolve Nexdrive links
+// --- NEXDRIVE & FASTDL SOLVER ENGINE ---
+
+export async function resolveFastDLDirectUrl(fastdlUrl: string): Promise<string | null> {
+  try {
+    const res = await axios.get(fastdlUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://nexdrive.beer/'
+      },
+      timeout: 8000
+    });
+    const match = res.data.match(/https:\/\/video-downloads\.googleusercontent\.com\/[^"'\s&]+/i);
+    if (match) {
+      return match[0];
+    }
+  } catch (err: any) {
+    console.warn(`[FastDL Resolver] Failed to resolve ${fastdlUrl}:`, err.message);
+  }
+  return null;
+}
+
+export interface NexdriveMirror {
+  name: string;
+  server: string;
+  url: string;
+  directDownloadUrl?: string;
+}
+
+export interface NexdriveEpisode {
+  episodeName: string;
+  mirrors: NexdriveMirror[];
+}
+
+export interface NexdriveSolveResult {
+  success: boolean;
+  inputUrl: string;
+  title: string;
+  isSeries: boolean;
+  totalMirrors: number;
+  mirrors: NexdriveMirror[];
+  episodes?: NexdriveEpisode[];
+  error?: string;
+}
+
+export async function solveNexdriveUrl(targetUrl: string, deepResolve: boolean = true): Promise<NexdriveSolveResult> {
+  if (!targetUrl || (!targetUrl.includes('nexdrive') && !targetUrl.includes('fastdl'))) {
+    throw new Error('Valid Nexdrive or FastDL URL is required');
+  }
+
+  // If already a FastDL link directly
+  if (targetUrl.includes('fastdl')) {
+    const directUrl = await resolveFastDLDirectUrl(targetUrl);
+    return {
+      success: true,
+      inputUrl: targetUrl,
+      title: 'FastDL Direct Mirror',
+      isSeries: false,
+      totalMirrors: 1,
+      mirrors: [{
+        name: 'G-Direct [Instant]',
+        server: 'G-Direct',
+        url: targetUrl,
+        directDownloadUrl: directUrl || undefined
+      }]
+    };
+  }
+
+  const response = await axiosGetWithFallback(targetUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+    timeout: 10000
+  });
+
+  const $ = cheerio.load(response.data);
+  const rawTitle = $('h1.entry-title, h1.post-title, title').first().text().trim() || 'Download Links';
+  const cleanTitle = rawTitle.replace(/–\s*Nexdrive.*$/i, '').replace(/\s*-\s*Nexdrive.*$/i, '').trim();
+
+  const mirrors: NexdriveMirror[] = [];
+  const episodesMap = new Map<string, NexdriveMirror[]>();
+
+  $('a').each((_, el) => {
+    const href = $(el).attr('href');
+    const text = $(el).text().trim().toLowerCase();
+    
+    const isTarget = href && !href.includes('nexdrive') && (
+      href.includes('vcloud') || text.includes('v-cloud') ||
+      href.includes('fastdl') || text.includes('g-direct') ||
+      href.includes('vegadrive') || text.includes('v-drive') ||
+      href.includes('filebee') || text.includes('filepress') ||
+      href.includes('hubcloud') || text.includes('hubcloud')
+    );
+
+    if (isTarget) {
+      let server = 'Mirror';
+      if (href.includes('fastdl') || text.includes('g-direct')) server = 'G-Direct';
+      else if (href.includes('filebee') || text.includes('filepress')) server = 'Filepress';
+      else if (href.includes('vcloud') || text.includes('v-cloud')) server = 'V-Cloud';
+      else if (href.includes('vegadrive') || text.includes('v-drive')) server = 'V-Drive';
+      else if (href.includes('hubcloud')) server = 'HubCloud';
+
+      let epName = '';
+      let prev = $(el).parent().prev();
+      let steps = 0;
+      while (prev.length > 0 && steps < 6) {
+        const hText = prev.text().trim();
+        if (hText.match(/Episode\s*\d+/i) || hText.match(/Ep\s*\d+/i) || hText.match(/S\d+\s*E\d+/i)) {
+          epName = hText;
+          break;
+        }
+        prev = prev.prev();
+        steps++;
+      }
+
+      const mirrorName = $(el).text().replace(/⚡/g, '').trim() || server;
+      const mirrorObj: NexdriveMirror = {
+        name: epName ? `${epName} - ${mirrorName}` : mirrorName,
+        server,
+        url: href
+      };
+
+      mirrors.push(mirrorObj);
+
+      if (epName) {
+        if (!episodesMap.has(epName)) {
+          episodesMap.set(epName, []);
+        }
+        episodesMap.get(epName)!.push({
+          name: mirrorName,
+          server,
+          url: href
+        });
+      }
+    }
+  });
+
+  // Deep resolve FastDL if requested (up to 3 mirrors to prevent timeouts)
+  if (deepResolve) {
+    let resolvedCount = 0;
+    for (const m of mirrors) {
+      if (m.server === 'G-Direct' && m.url.includes('fastdl') && resolvedCount < 3) {
+        const direct = await resolveFastDLDirectUrl(m.url);
+        if (direct) {
+          m.directDownloadUrl = direct;
+          resolvedCount++;
+        }
+      }
+    }
+  }
+
+  const isSeries = episodesMap.size > 0;
+  const episodes: NexdriveEpisode[] = Array.from(episodesMap.entries()).map(([episodeName, epMirrors]) => ({
+    episodeName,
+    mirrors: epMirrors
+  }));
+
+  return {
+    success: true,
+    inputUrl: targetUrl,
+    title: cleanTitle,
+    isSeries,
+    totalMirrors: mirrors.length,
+    mirrors,
+    ...(isSeries ? { episodes } : {})
+  };
+}
+
+// Dedicated Nexdrive Solver API Endpoint (GET)
+// Example: GET /api/nexdrive/solve?url=https://nexdrive.beer/genxfm784776518071/&deep=true
+router.get('/nexdrive/solve', async (req, res) => {
+  try {
+    const url = (req.query.url as string || '').trim();
+    const deep = req.query.deep !== 'false';
+    if (!url) {
+      return res.status(400).json({ success: false, error: 'url parameter is required' });
+    }
+
+    const result = await solveNexdriveUrl(url, deep);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Nexdrive solver error:', error.message);
+    res.status(500).json({ success: false, error: error.message || 'Failed to solve Nexdrive URL' });
+  }
+});
+
+// Dedicated Nexdrive Solver API Endpoint (POST)
+// Example: POST /api/nexdrive/solve with JSON { "url": "https://nexdrive.beer/genxfm...", "deep": true }
+router.post('/nexdrive/solve', async (req, res) => {
+  try {
+    const { url, deep } = req.body;
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ success: false, error: 'url string in request body is required' });
+    }
+
+    const result = await solveNexdriveUrl(url.trim(), deep !== false);
+    res.json(result);
+  } catch (error: any) {
+    console.error('Nexdrive solver error:', error.message);
+    res.status(500).json({ success: false, error: error.message || 'Failed to solve Nexdrive URL' });
+  }
+});
+
+// API route to resolve Nexdrive links (used by frontend ResolvableLink)
 router.get('/resolve-link', async (req, res) => {
   try {
-    const url = req.query.url as string;
+    const url = (req.query.url as string || '').trim();
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    if (!url.includes('nexdrive')) {
-      return res.json({ resolvedUrl: url }); // Return original if not nexdrive
+    if (!url.includes('nexdrive') && !url.includes('fastdl')) {
+      return res.json({ resolvedUrl: url });
     }
 
     console.log(`Resolving Nexdrive link: ${url}`);
-    const response = await axiosGetWithFallback(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      }
-    });
+    const solved = await solveNexdriveUrl(url, true);
 
-    const $ = cheerio.load(response.data);
-    let resolvedUrl = url; // Default to original if we can't find a better one
-    
-    // Find all valid target links (V-Cloud, G-Direct, V-Drive, Filepress)
-    const validLinks: { name: string, url: string }[] = [];
-    $('a').each((i, el) => {
-      const href = $(el).attr('href');
-      const text = $(el).text().trim().toLowerCase();
-      
-      const isTarget = href && !href.includes('nexdrive') && (
-        href.includes('vcloud') || text.includes('v-cloud') ||
-        href.includes('fastdl') || text.includes('g-direct') ||
-        href.includes('vegadrive') || text.includes('v-drive') ||
-        href.includes('filebee') || text.includes('filepress')
-      );
-
-      if (isTarget) {
-        
-        let epName = $(el).text().trim() || 'Link';
-        let prev = $(el).parent().prev();
-        while(prev.length > 0) {
-            const hText = prev.text().trim();
-            if (hText.includes('Episode') || hText.includes('Ep')) {
-                epName = `${hText} - ${epName}`;
-                break;
-            }
-            prev = prev.prev();
-        }
-        
-        // Clean up the name for single movie mirrors
-        epName = epName.replace(/⚡/g, '').trim();
-        
-        validLinks.push({ name: epName, url: href });
-      }
-    });
-
-    if (validLinks.length === 1) {
-      resolvedUrl = validLinks[0].url;
-      res.json({ resolvedUrl });
-    } else if (validLinks.length > 1) {
-       res.json({ resolvedUrls: validLinks }); 
+    if (solved.mirrors.length === 1) {
+      const single = solved.mirrors[0];
+      return res.json({ 
+        resolvedUrl: single.directDownloadUrl || single.url,
+        directDownloadUrl: single.directDownloadUrl,
+        mirrors: solved.mirrors 
+      });
+    } else if (solved.mirrors.length > 1) {
+      return res.json({ 
+        resolvedUrls: solved.mirrors.map(m => ({ 
+          name: m.name, 
+          url: m.directDownloadUrl || m.url,
+          originalMirrorUrl: m.url,
+          directDownloadUrl: m.directDownloadUrl,
+          server: m.server
+        })),
+        mirrors: solved.mirrors
+      });
     } else {
-       res.json({ resolvedUrl });
+      return res.json({ resolvedUrl: url });
     }
   } catch (error: any) {
     console.error('Link resolver error:', error.message);

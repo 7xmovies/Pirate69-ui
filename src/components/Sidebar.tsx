@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Film, X, ChevronDown, List, Bookmark, History } from 'lucide-react';
+import { Home, Film, X, ChevronDown, List, Bookmark, History, Zap } from 'lucide-react';
 import { SourceType } from '../types';
 
 interface SidebarProps {
@@ -15,6 +15,7 @@ interface SidebarProps {
   isHistoryView: boolean;
   activeSource?: SourceType;
   onSelectSource?: (source: SourceType) => void;
+  onOpenSolver?: () => void;
 }
 
 export function Sidebar({ 
@@ -29,7 +30,8 @@ export function Sidebar({
   onHistoryClick, 
   isHistoryView,
   activeSource,
-  onSelectSource
+  onSelectSource,
+  onOpenSolver
 }: SidebarProps) {
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
@@ -107,6 +109,19 @@ export function Sidebar({
             <History className="w-5 h-5" />
             Recently Viewed
           </button>
+
+          {onOpenSolver && (
+            <button
+              onClick={() => {
+                onOpenSolver();
+                onClose();
+              }}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors mt-1 text-slate-700 dark:text-slate-300 hover:bg-indigo-500/10 hover:text-indigo-400"
+            >
+              <Zap className="w-5 h-5 text-indigo-400" />
+              Nexdrive URL Solver
+            </button>
+          )}
 
           <div className="mt-6">
             <h3 className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sources</h3>

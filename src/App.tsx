@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Film, Loader2, Menu, History, Sun, Moon, Trash2, Bell } from 'lucide-react';
+import { Film, Loader2, Menu, History, Sun, Moon, Trash2, Bell, Zap } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { MediaItem, SearchResponse, PostDetails, DetailsResponse, SourceType, GithubRepoInfo } from './types';
 import { SearchBar } from './components/SearchBar';
@@ -8,6 +8,7 @@ import { MediaGridSkeleton } from './components/MediaGridSkeleton';
 import { PostDetailsView } from './components/PostDetailsView';
 import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
+import { NexdriveSolverModal } from './components/NexdriveSolverModal';
 
 const CATEGORIES = [
   'Action', 'Adventure', 'Comedy', 'Drama', 'Sci-Fi', 'Horror', 'Thriller', 'Animation', 'Netflix'
@@ -35,6 +36,7 @@ export default function App() {
   const [notifications, setNotifications] = useState<string[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  const [isSolverModalOpen, setIsSolverModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -392,6 +394,16 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Nexdrive Solver Quick Button */}
+            <button
+              onClick={() => setIsSolverModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-semibold transition-all shadow-sm"
+              title="Solve any Nexdrive URL to direct mirrors"
+            >
+              <Zap className="w-3.5 h-3.5 text-indigo-500 fill-indigo-500" />
+              <span className="hidden sm:inline">Nexdrive Solver</span>
+            </button>
+
             {/* Notifications */}
             <div className="relative">
               <button
@@ -454,6 +466,7 @@ export default function App() {
         isHistoryView={isHistoryView}
         activeSource={activeSource}
         onSelectSource={handleSourceChange}
+        onOpenSolver={() => setIsSolverModalOpen(true)}
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -680,6 +693,10 @@ export default function App() {
         )}
       </main>
       <Footer />
+      <NexdriveSolverModal 
+        isOpen={isSolverModalOpen} 
+        onClose={() => setIsSolverModalOpen(false)} 
+      />
     </div>
   );
 }

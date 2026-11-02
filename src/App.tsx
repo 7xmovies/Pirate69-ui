@@ -501,6 +501,16 @@ export default function App() {
                     Bollywood
                   </button>
                   <button 
+                    onClick={() => handleSourceChange('xprimehub')} 
+                    className={`px-6 py-2.5 rounded-xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border ${
+                      activeSource === 'xprimehub' 
+                        ? 'bg-gradient-to-br from-purple-500 to-fuchsia-600 shadow-purple-500/50 border-purple-400 ring-2 ring-purple-400 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950' 
+                        : 'bg-slate-800 hover:bg-slate-700 shadow-slate-900/50 border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    X-Hub (18+)
+                  </button>
+                  <button 
                     onClick={handleRandomize} 
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 border ${
                       isRandomMode

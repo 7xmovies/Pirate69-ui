@@ -7,6 +7,14 @@ export interface MediaItem {
   link: string;
   source?: string;
   category?: string;
+  rating?: number;
+  quality?: string;
+  year?: string;
+  mediaType?: string;
+  isSeries?: boolean;
+  season?: number;
+  tmdbId?: number;
+  imdbId?: string;
 }
 
 export interface GithubRepoInfo {
@@ -27,6 +35,7 @@ export interface SearchResponse {
   page?: number;
   totalPages?: number;
   hasMore?: boolean;
+  total?: number;
   error?: string;
 }
 
@@ -37,14 +46,27 @@ export interface DownloadLink {
   size?: string;
   audio?: string;
   server?: string;
+  season?: number | null;
+  episode?: number | null;
+  isBatch?: boolean;
 }
 
 export interface PostDetails {
+  id?: string;
   title: string;
   thumbnail: string;
   screenshots: string[];
   genres?: string[];
   description?: string;
+  overview?: string;
+  rating?: number;
+  year?: string;
+  quality?: string;
+  season?: number;
+  isSeries?: boolean;
+  tmdbId?: number;
+  imdbId?: string;
+  mediaType?: string;
   downloadLinks: DownloadLink[];
 }
 

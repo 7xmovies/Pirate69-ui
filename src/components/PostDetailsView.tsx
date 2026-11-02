@@ -218,9 +218,58 @@ export function PostDetailsView({ loading, error, details, selectedPostUrl, onBa
          {/* Right Column: Details & Links */}
          <div className="lg:col-span-9 space-y-12">
             <div>
-               <h1 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white leading-tight mb-4 font-heading">
+               <h1 className="text-xl md:text-2xl font-semibold text-slate-900 dark:text-white leading-tight mb-3 font-heading">
                  {details.title}
                </h1>
+
+               {/* Metadata Badges */}
+               <div className="flex flex-wrap items-center gap-2 mb-4">
+                 {typeof details.rating === 'number' && details.rating > 0 && (
+                   <span className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 shadow-md">
+                     ★ {details.rating.toFixed(1)} TMDB
+                   </span>
+                 )}
+                 {details.year && (
+                   <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                     {details.year}
+                   </span>
+                 )}
+                 {details.quality && (
+                   <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50">
+                     {details.quality}
+                   </span>
+                 )}
+                 {details.isSeries && (
+                   <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50">
+                     Series{details.season ? ` • Season ${details.season}` : ''}
+                   </span>
+                 )}
+                 {details.imdbId && (
+                   <a 
+                     href={`https://www.imdb.com/title/${details.imdbId}`} 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#F5C518] text-black hover:opacity-90 transition-opacity flex items-center gap-1 shadow-sm"
+                   >
+                     IMDb ↗
+                   </a>
+                 )}
+                 {details.genres && details.genres.map((g, idx) => (
+                   <span key={idx} className="px-2 py-0.5 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 rounded-md">
+                     {g}
+                   </span>
+                 ))}
+               </div>
+
+               {/* Overview / Synopsis */}
+               {(details.overview || details.description) && (
+                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 mb-6">
+                   <h3 className="text-xs uppercase tracking-wider font-semibold text-slate-500 mb-1.5">Overview</h3>
+                   <p className="text-sm md:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
+                     {details.overview || details.description}
+                   </p>
+                 </div>
+               )}
             </div>
 
             {/* Download Links */}

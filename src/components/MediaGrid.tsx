@@ -19,19 +19,34 @@ export const MediaGrid = React.memo(function MediaGrid({ results, onPostClick }:
         >
           {/* Thumbnail Container */}
           <div className="relative aspect-[2/3] w-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-            {item.category && (
-              <div className="absolute top-2 left-2 z-10 pointer-events-none">
+            <div className="absolute top-2 left-2 z-10 pointer-events-none flex items-center gap-1.5 flex-wrap">
+              {item.category && (
                 <span className={`px-2 py-0.5 text-[10px] font-bold rounded-md shadow-md uppercase tracking-wider ${
                   item.category === 'hollywood' 
                     ? 'bg-indigo-600/95 text-white' 
                     : item.category === 'bollywood'
                     ? 'bg-orange-600/95 text-white'
-                    : 'bg-emerald-600/95 text-white'
+                    : 'bg-fuchsia-600/95 text-white'
                 }`}>
-                  {item.category}
+                  {item.category === 'xprimehub' ? '18+ Adult' : item.category}
+                </span>
+              )}
+              {item.quality && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-md shadow-md bg-slate-900/80 text-cyan-300 backdrop-blur-sm border border-cyan-500/30">
+                  {item.quality}
+                </span>
+              )}
+            </div>
+
+            {/* Rating Badge */}
+            {typeof item.rating === 'number' && item.rating > 0 && (
+              <div className="absolute top-2 right-2 z-10 pointer-events-none">
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold rounded-md shadow-lg bg-amber-500 text-slate-950">
+                  ★ {item.rating.toFixed(1)}
                 </span>
               </div>
             )}
+
             {item.thumbnail ? (
               <img
                 src={getProxyUrl(item.thumbnail)}
@@ -62,10 +77,26 @@ export const MediaGrid = React.memo(function MediaGrid({ results, onPostClick }:
           </div>
           
           {/* Content Container */}
-          <div className="p-3 sm:p-5 flex flex-col flex-grow justify-between gap-3 sm:gap-4">
-            <h3 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200 line-clamp-3 leading-snug group-hover:text-indigo-400 transition-colors">
+          <div className="p-3 sm:p-5 flex flex-col flex-grow justify-between gap-2.5">
+            <h3 className="text-sm sm:text-base font-medium text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug group-hover:text-indigo-400 transition-colors">
               {item.title}
             </h3>
+            
+            <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
+              {item.year && <span>{item.year}</span>}
+              {item.isSeries && (
+                <>
+                  <span>•</span>
+                  <span className="text-indigo-400">Series{item.season ? ` (S${item.season})` : ''}</span>
+                </>
+              )}
+              {item.mediaType === 'movie' && !item.isSeries && (
+                <>
+                  <span>•</span>
+                  <span>Movie</span>
+                </>
+              )}
+            </div>
           </div>
         </button>
       ))}

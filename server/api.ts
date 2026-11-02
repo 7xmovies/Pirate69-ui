@@ -184,12 +184,20 @@ interface CacheEntry<T> {
 }
 const indexCache: Record<string, CacheEntry<any[]>> = {};
 const chunkCache: Record<string, CacheEntry<any>> = {};
+const homepageCache: Record<string, CacheEntry<any[]>> = {};
 const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes in-memory cache
 
 const getCategoryName = (source: string) => {
-    if (source === 'rogmovies' || source === 'bollywood') return 'bollywood';
-    if (source === 'xprimehub') return 'xprimehub';
+    const s = (source || '').toLowerCase().trim();
+    if (s === 'rogmovies' || s === 'bollywood') return 'bollywood';
+    if (s === 'xprimehub' || s === 'xhub' || s === 'adult') return 'xprimehub';
     return 'hollywood';
+};
+
+const getHomepageFileName = (categoryName: string) => {
+    if (categoryName === 'bollywood') return 'rogmovieshomepage.json';
+    if (categoryName === 'xprimehub') return 'xprimehubhomepage.json';
+    return 'vegamovieshomepage.json';
 };
 
 function getLocalIndex(categoryName: string): any[] | null {
@@ -204,6 +212,36 @@ function getLocalIndex(categoryName: string): any[] | null {
     return null;
 }
 
+// Fetch live homepage snapshot feeds (vegamovieshomepage.json, rogmovieshomepage.json, xprimehubhomepage.json)
+async function getGithubHomepageFeed(categoryName: string, forceRefresh = false): Promise<any[]> {
+    const fileName = getHomepageFileName(categoryName);
+    const cached = homepageCache[categoryName];
+    if (!forceRefresh && cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+        return cached.data;
+    }
+
+    try {
+        const rawUrl = `${getRawGithubUrl()}/${fileName}`;
+        console.log(`[GitHub Repo] Fetching live homepage feed: ${rawUrl}`);
+        const response = await axios.get(rawUrl, {
+            headers: {
+                'Accept': 'application/json, text/plain, */*',
+                'User-Agent': 'Pirate69-App'
+            },
+            timeout: 12000
+        });
+
+        if (Array.isArray(response.data)) {
+            homepageCache[categoryName] = { data: response.data, timestamp: Date.now() };
+            return response.data;
+        }
+    } catch (err: any) {
+        console.warn(`[GitHub Repo] Could not fetch ${fileName}:`, err.message);
+    }
+    return [];
+}
+
+// Fetch master search index (hollywood-index.json, bollywood-index.json, xprimehub-index.json)
 async function getGithubIndex(categoryName: string, forceRefresh = false): Promise<any[]> {
     // 1. Check local file if present
     const local = getLocalIndex(categoryName);
@@ -235,6 +273,36 @@ async function getGithubIndex(categoryName: string, forceRefresh = false): Promi
         console.warn(`[GitHub Repo] Could not fetch ${categoryName}-index.json:`, err.message);
     }
     return [];
+}
+
+// Combine live homepage feed (freshest releases with complete links) and master index
+async function getUnifiedCategoryData(categoryName: string, forceRefresh = false): Promise<any[]> {
+    const [homepageFeed, masterIndex] = await Promise.all([
+        getGithubHomepageFeed(categoryName, forceRefresh),
+        getGithubIndex(categoryName, forceRefresh)
+    ]);
+
+    const seenIds = new Set<string>();
+    const unified: any[] = [];
+
+    // 1. Add homepage feed items first (these are the newest, page 1 releases)
+    for (const item of (homepageFeed || [])) {
+        if (item && item.id && !seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            unified.push({ ...item, category: categoryName, isHomepageFeatured: true });
+        }
+    }
+
+    // 2. Add remaining catalog items from master index
+    const reversedIndex = Array.isArray(masterIndex) ? [...masterIndex].reverse() : [];
+    for (const item of reversedIndex) {
+        if (item && item.id && !seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            unified.push({ ...item, category: categoryName });
+        }
+    }
+
+    return unified;
 }
 
 async function getGithubChunk(categoryName: string, chunkId: number | string, forceRefresh = false): Promise<any> {
@@ -307,16 +375,36 @@ function findMovieInLocalChunks(targetUrlOrId: string): any | null {
     return null;
 }
 
-async function findMovieInGithubChunks(targetUrlOrId: string): Promise<any | null> {
+async function findMovieInDatabase(targetUrlOrId: string): Promise<any | null> {
     try {
         const cleanTarget = targetUrlOrId.replace(/\/+$/, '');
         const slug = cleanTarget.split('/').pop() || cleanTarget;
+        const categories = ['hollywood', 'bollywood', 'xprimehub'];
 
-        // Check local disk first
+        // 1. Check across all live homepage feeds first (zero network hop for chunk)
+        for (const cat of categories) {
+            const homepageFeed = await getGithubHomepageFeed(cat);
+            if (Array.isArray(homepageFeed)) {
+                const match = homepageFeed.find((m: any) => 
+                    m.id === slug ||
+                    m.id === targetUrlOrId ||
+                    (m.sourceUrl && m.sourceUrl.replace(/\/+$/, '') === cleanTarget) ||
+                    (m.link && m.link.replace(/\/+$/, '') === cleanTarget) ||
+                    cleanTarget.includes(m.id) ||
+                    (m.id && cleanTarget.includes(m.id))
+                );
+                if (match) {
+                    console.log(`[Database Details] Found directly in homepage feed (${cat}): ${match.id}`);
+                    return { ...match, category: cat };
+                }
+            }
+        }
+
+        // 2. Check local disk chunks if present
         const local = findMovieInLocalChunks(targetUrlOrId);
         if (local) return local;
 
-        const categories = ['hollywood', 'bollywood', 'xprimehub'];
+        // 3. Check Master Index and partitioned chunk files
         for (const cat of categories) {
             const index = await getGithubIndex(cat);
             const entry = index.find((m: any) => 
@@ -336,11 +424,11 @@ async function findMovieInGithubChunks(targetUrlOrId: string): Promise<any | nul
                                 (v.sourceUrl && v.sourceUrl.replace(/\/+$/, '') === cleanTarget) ||
                                 (v.id && cleanTarget.includes(v.id))
                               );
-                if (movie) return { ...movie, category: cat };
+                if (movie) return { ...movie, ...entry, category: cat };
             }
         }
     } catch (err: any) {
-        console.error('Error finding movie in GitHub chunks:', err.message);
+        console.error('Error finding movie in database:', err.message);
     }
     return null;
 }
@@ -349,10 +437,13 @@ async function findMovieInGithubChunks(targetUrlOrId: string): Promise<any | nul
 router.get('/github/info', async (req, res) => {
     try {
         const parsed = parseGithubRepo(currentGithubRepo);
-        const [h, b, x] = await Promise.all([
+        const [h, b, x, vHome, rHome, xHome] = await Promise.all([
             getGithubIndex('hollywood'),
             getGithubIndex('bollywood'),
-            getGithubIndex('xprimehub')
+            getGithubIndex('xprimehub'),
+            getGithubHomepageFeed('hollywood'),
+            getGithubHomepageFeed('bollywood'),
+            getGithubHomepageFeed('xprimehub')
         ]);
 
         res.json({
@@ -364,6 +455,11 @@ router.get('/github/info', async (req, res) => {
                 hollywood: h.length,
                 bollywood: b.length,
                 xprimehub: x.length,
+                homepage: {
+                    vegamovies: vHome.length,
+                    rogmovies: rHome.length,
+                    xprimehub: xHome.length
+                },
                 total: h.length + b.length + x.length
             },
             lastSynced: new Date().toISOString()
@@ -378,11 +474,15 @@ router.post('/github/refresh', async (req, res) => {
     try {
         Object.keys(indexCache).forEach(k => delete indexCache[k]);
         Object.keys(chunkCache).forEach(k => delete chunkCache[k]);
+        Object.keys(homepageCache).forEach(k => delete homepageCache[k]);
 
-        const [h, b, x] = await Promise.all([
+        const [h, b, x, vHome, rHome, xHome] = await Promise.all([
             getGithubIndex('hollywood', true),
             getGithubIndex('bollywood', true),
-            getGithubIndex('xprimehub', true)
+            getGithubIndex('xprimehub', true),
+            getGithubHomepageFeed('hollywood', true),
+            getGithubHomepageFeed('bollywood', true),
+            getGithubHomepageFeed('xprimehub', true)
         ]);
 
         const parsed = parseGithubRepo(currentGithubRepo);
@@ -394,6 +494,11 @@ router.post('/github/refresh', async (req, res) => {
                 hollywood: h.length,
                 bollywood: b.length,
                 xprimehub: x.length,
+                homepage: {
+                    vegamovies: vHome.length,
+                    rogmovies: rHome.length,
+                    xprimehub: xHome.length
+                },
                 total: h.length + b.length + x.length
             }
         });
@@ -413,6 +518,7 @@ router.post('/github/config', async (req, res) => {
         currentGithubRepo = repoUrl;
         Object.keys(indexCache).forEach(k => delete indexCache[k]);
         Object.keys(chunkCache).forEach(k => delete chunkCache[k]);
+        Object.keys(homepageCache).forEach(k => delete homepageCache[k]);
 
         const [h, b, x] = await Promise.all([
             getGithubIndex('hollywood', true),
@@ -433,7 +539,7 @@ router.post('/github/config', async (req, res) => {
             }
         });
     } catch (err: any) {
-        res.status(500).json({ error: err.message || 'Failed to update GitHub config' });
+        res.status(500).json({ error: err.message || 'Failed to update GitHub configuration' });
     }
 });
 
@@ -502,16 +608,15 @@ router.get('/search', async (req, res) => {
 
     console.log(`[Database Search] Category: ${categoryName}, Query: "${query}", Filter: "${category}", Page: ${page}`);
 
-    // 1. Fetch index data for the selected category (hollywood-index.json, bollywood-index.json, or xprimehub-index.json)
-    const indexData = await getGithubIndex(categoryName);
-    // Reverse the array so the newest items (added to the end of the JSON) appear first
-    let filtered: any[] = Array.isArray(indexData) ? [...indexData].reverse() : [];
+    // 1. Fetch unified category data (Live Homepage feed + Master search index)
+    const allMovies = await getUnifiedCategoryData(categoryName);
+    let filtered: any[] = [...allMovies];
 
     // 2. Filter by search query if provided
     const queryClean = (query === '*' ? '' : query).toLowerCase();
     if (queryClean) {
       filtered = filtered.filter(m => {
-        const title = (m.title || m.cleanTitle || '').toLowerCase();
+        const title = (m.title || m.cleanTitle || m.fullTitle || '').toLowerCase();
         const id = (m.id || '').toLowerCase();
         return title.includes(queryClean) || id.includes(queryClean);
       });
@@ -524,7 +629,10 @@ router.get('/search', async (req, res) => {
         if (m.categories && Array.isArray(m.categories)) {
            return m.categories.some((c: string) => c.toLowerCase() === catLower);
         }
-        const title = (m.title || m.cleanTitle || '').toLowerCase();
+        if (m.genres && Array.isArray(m.genres)) {
+           return m.genres.some((g: string) => g.toLowerCase() === catLower);
+        }
+        const title = (m.title || m.cleanTitle || m.fullTitle || '').toLowerCase();
         return title.includes(catLower);
       });
     }
@@ -549,11 +657,19 @@ router.get('/search', async (req, res) => {
     return res.json({
       results: pageItems.map(m => ({
         id: m.id,
-        title: m.title || m.cleanTitle || m.id,
+        title: m.cleanTitle || m.title || m.fullTitle || m.id,
         thumbnail: m.poster || m.thumbnail || '',
         link: m.sourceUrl || `github://${categoryName}/${m.id}`,
         source: categoryName,
-        category: categoryName
+        category: categoryName,
+        rating: typeof m.rating === 'number' ? m.rating : undefined,
+        quality: m.quality,
+        year: m.year ? String(m.year) : undefined,
+        mediaType: m.mediaType,
+        isSeries: m.isSeries,
+        season: m.season,
+        tmdbId: m.tmdbId,
+        imdbId: m.imdbId
       })),
       page,
       totalPages,
@@ -561,12 +677,12 @@ router.get('/search', async (req, res) => {
       total: filtered.length
     });
   } catch (error: any) {
-    console.error('Error fetching movies from database index:', error.message);
+    console.error('Error fetching movies from database:', error.message);
     res.status(500).json({ results: [], page: 1, totalPages: 1, hasMore: false, error: 'Failed to load movie database' });
   }
 });
 
-// API route for extracting movie details from JSON database chunks
+// API route for extracting movie details from JSON database chunks or live feeds
 router.get('/details', async (req, res) => {
   try {
     const url = (req.query.url as string || '').trim();
@@ -576,15 +692,26 @@ router.get('/details', async (req, res) => {
 
     console.log(`[Database Details] Looking up movie details for: ${url}`);
 
-    // Lookup movie details directly in GitHub chunk files
-    const cachedMovie = await findMovieInGithubChunks(url);
+    // Lookup movie details across homepage feeds and chunk files
+    const cachedMovie = await findMovieInDatabase(url);
     if (cachedMovie) {
       return res.json({
         details: {
-          title: cachedMovie.fullTitle || cachedMovie.cleanTitle || cachedMovie.title || cachedMovie.id,
+          id: cachedMovie.id,
+          title: cachedMovie.cleanTitle || cachedMovie.fullTitle || cachedMovie.title || cachedMovie.id,
           thumbnail: cachedMovie.poster || cachedMovie.thumbnail || '',
+          overview: cachedMovie.overview || cachedMovie.description || '',
+          description: cachedMovie.overview || cachedMovie.description || '',
+          rating: typeof cachedMovie.rating === 'number' ? cachedMovie.rating : undefined,
+          year: cachedMovie.year ? String(cachedMovie.year) : undefined,
+          quality: cachedMovie.quality,
+          season: cachedMovie.season,
+          isSeries: cachedMovie.isSeries,
+          tmdbId: cachedMovie.tmdbId,
+          imdbId: cachedMovie.imdbId,
+          mediaType: cachedMovie.mediaType,
           screenshots: cachedMovie.screenshots || [],
-          genres: cachedMovie.categories || [],
+          genres: cachedMovie.categories || cachedMovie.genres || [],
           downloadLinks: (cachedMovie.downloadLinks || []).map((dl: any) => ({
             label: dl.label || dl.name || 'Download Now',
             name: dl.label || dl.name || 'Download Now',
@@ -592,14 +719,17 @@ router.get('/details', async (req, res) => {
             quality: dl.quality,
             size: dl.size,
             audio: dl.audio,
-            server: dl.server
+            server: dl.server,
+            season: dl.season,
+            episode: dl.episode,
+            isBatch: dl.isBatch
           }))
         }
       });
     }
 
-    // If not found in any chunk
-    return res.status(404).json({ error: 'Movie details not found in database chunks.' });
+    // If not found in any database source
+    return res.status(404).json({ error: 'Movie details not found in database.' });
   } catch (error: any) {
     console.error('Database details lookup error:', error.message);
     res.status(500).json({ error: 'Failed to extract movie details.' });

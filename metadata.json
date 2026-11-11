@@ -1,0 +1,11 @@
+{
+  "name": "Remix Pirate69 bot",
+  "description": "A media information extractor that searches and retrieves post titles, thumbnails, and links.",
+  "requestFramePermissions": [
+    "clipboard-write",
+    "clipboard-read"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
